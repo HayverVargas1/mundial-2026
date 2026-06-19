@@ -1,0 +1,280 @@
+import 'package:flutter/material.dart';
+import '../models/match_model.dart';
+import '../core/constants/app_colors.dart';
+import '../core/constants/app_strings.dart';
+import '../core/utils/date_utils.dart';
+import 'team_flag.dart';
+import 'countdown_widget.dart';
+import 'live_badge.dart';
+import '../screens/match_details/match_details_screen.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/app_providers.dart';
+
+class HeroMatchCard extends ConsumerWidget {
+  final MatchModel match;
+
+  const HeroMatchCard({Key? key, required this.match}) : super(key: key);
+
+  Widget _buildGoals() {
+    if (match.goals.isEmpty) return const SizedBox();
+    
+    final homeGoals = match.goals.where((g) => g.teamId == match.homeTeam?.id).toList();
+    final awayGoals = match.goals.where((g) => g.teamId == match.awayTeam?.id).toList();
+
+    Map<String, List<String>> groupGoals(List<GoalModel> goals) {
+      final grouped = <String, List<String>>{};
+      for (var g in goals) {
+        final minuteStr = "${g.minute}'${g.isPenalty ? " (P)" : ""}";
+        if (grouped.containsKey(g.playerName)) {
+          grouped[g.playerName]!.add(minuteStr);
+        } else {
+          grouped[g.playerName] = [minuteStr];
+        }
+      }
+      return grouped;
+    }
+
+    final groupedHome = groupGoals(homeGoals);
+    final groupedAway = groupGoals(awayGoals);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: groupedHome.entries.map((e) => Text(
+                '${e.key} ${e.value.join(", ")}',
+                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              )).toList(),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: groupedAway.entries.map((e) => Text(
+                '${e.key} ${e.value.join(", ")}',
+                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              )).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final home = match.homeTeam;
+    final away = match.awayTeam;
+
+    String displayGroupName = match.groupName ?? 'Fase de Grupos';
+    final groupsAsync = ref.watch(groupsProvider);
+    if (groupsAsync.hasValue && home != null) {
+      for (var group in groupsAsync.value!) {
+        if (group.standings.any((s) => s.team.id == home.id)) {
+          displayGroupName = group.name.replaceAll('Group', 'Grupo').replaceAll('group', 'Grupo');
+          break;
+        }
+      }
+    }
+
+    final homeIsWinner = match.status == MatchStatus.finished && 
+        (home?.winner == true || (home?.score != null && away?.score != null && int.tryParse(home!.score!) != null && int.tryParse(away!.score!) != null && int.parse(home!.score!) > int.parse(away!.score!)));
+    final awayIsWinner = match.status == MatchStatus.finished && 
+        (away?.winner == true || (home?.score != null && away?.score != null && int.tryParse(home!.score!) != null && int.tryParse(away!.score!) != null && int.parse(away!.score!) > int.parse(home!.score!)));
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => MatchDetailsScreen(match: match)),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: AppColors.heroGradient,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header info
+          Column(
+            children: [
+              Text(
+                'Fase de Grupos · ${AppDateUtils.formatShortDay(match.date)} ${AppDateUtils.formatDayNumber(match.date)} ${AppDateUtils.formatTime(match.date)}',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+              if (displayGroupName != 'Fase de Grupos')
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    displayGroupName,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Teams and score/time
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Home Team
+              Expanded(
+                flex: 3,
+                child: Column(
+                  children: [
+                    TeamFlag(
+                      logoUrl: home?.logoUrl,
+                      teamName: home?.displayName ?? 'TBD',
+                      size: 64,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      home?.displayName ?? 'Por definir',
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: homeIsWinner ? AppColors.primary : Colors.white,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Center Info
+              Expanded(
+                flex: 4,
+                child: Column(
+                  children: [
+                    if (match.status == MatchStatus.upcoming)
+                      Column(
+                        children: [
+                          CountdownWidget(targetDate: match.date),
+                        ],
+                      )
+                    else if (match.status == MatchStatus.finished)
+                      Column(
+                        children: [
+                          const Text(
+                            'FINALIZADO',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          Text(
+                            AppDateUtils.formatTime(match.date),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      LiveBadge(
+                        matchId: match.id,
+                        clock: match.displayClock, 
+                        clockSeconds: match.clockSeconds,
+                        period: match.period,
+                        isTicking: match.isTicking,
+                        isHalftime: match.isHalftime,
+                      ),
+                    const SizedBox(height: 12),
+                    if (match.status != MatchStatus.upcoming)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('${home?.score ?? "0"}', style: TextStyle(color: homeIsWinner ? AppColors.primary : Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
+                          const Text(' - ', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
+                          Text('${away?.score ?? "0"}', style: TextStyle(color: awayIsWinner ? AppColors.primary : Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+              
+              // Away Team
+              Expanded(
+                flex: 3,
+                child: Column(
+                  children: [
+                    TeamFlag(
+                      logoUrl: away?.logoUrl,
+                      teamName: away?.displayName ?? 'TBD',
+                      size: 64,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      away?.displayName ?? 'Por definir',
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: awayIsWinner ? AppColors.primary : Colors.white,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          if (match.status == MatchStatus.live || match.status == MatchStatus.finished)
+            _buildGoals(),
+
+          const SizedBox(height: 24),
+          const Divider(color: AppColors.borderLight, height: 1),
+          const SizedBox(height: 16),
+          
+          // Venue
+          Text(
+            '${match.venue?.fullName ?? "Estadio por definir"} · ${match.venue?.city ?? ""}',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    ),
+    );
+  }
+}
