@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import '../core/constants/app_strings.dart';
 import '../core/constants/app_colors.dart';
 
@@ -50,8 +49,8 @@ class BottomNav extends StatelessWidget {
             label: 'En Vivo',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Alertas',
+            icon: Icon(Icons.star_rounded),
+            label: AppStrings.navRanking,
           ),
         ],
       ),

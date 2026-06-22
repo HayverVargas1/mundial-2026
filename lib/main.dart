@@ -10,8 +10,8 @@ import 'screens/matches/matches_screen.dart';
 import 'screens/groups/groups_screen.dart';
 import 'screens/bracket/bracket_screen.dart';
 import 'screens/live/live_screen.dart';
+import 'screens/ranking/ranking_screen.dart';
 
-import 'screens/alerts/alerts_screen.dart';
 import 'widgets/bottom_nav.dart';
 import 'services/notification_service.dart';
 import 'services/polling_service.dart';
@@ -79,7 +79,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     const GroupsScreen(),
     const BracketScreen(),
     const LiveScreen(),
-    const AlertsScreen(),
+    const RankingScreen(),
   ];
 
   @override

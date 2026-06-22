@@ -8,11 +8,13 @@ import '../../widgets/team_flag.dart';
 import 'match_stats_view.dart';
 import 'match_rosters_view.dart';
 import 'team_matches_tab.dart';
+import 'match_timeline_view.dart';
 
 class MatchDetailsScreen extends ConsumerWidget {
   final MatchModel match;
+  final int initialTabIndex;
 
-  const MatchDetailsScreen({Key? key, required this.match}) : super(key: key);
+  const MatchDetailsScreen({Key? key, required this.match, this.initialTabIndex = 0}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,7 +26,8 @@ class MatchDetailsScreen extends ConsumerWidget {
         (match.awayTeam?.winner == true || (match.homeTeam?.score != null && match.awayTeam?.score != null && int.tryParse(match.homeTeam!.score!) != null && int.tryParse(match.awayTeam!.score!) != null && int.parse(match.awayTeam!.score!) > int.parse(match.homeTeam!.score!)));
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
+      initialIndex: initialTabIndex,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Detalles del Partido'),
@@ -97,15 +100,19 @@ class MatchDetailsScreen extends ConsumerWidget {
               ),
             ),
             
-            // Tabs
+            // Tabs - full Spanish, 2 lines if needed
             const TabBar(
               indicatorColor: AppColors.primary,
               labelColor: AppColors.primary,
               unselectedLabelColor: AppColors.textSecondary,
+              isScrollable: false,
+              labelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, height: 1.2),
+              unselectedLabelStyle: TextStyle(fontSize: 11, height: 1.2),
               tabs: [
-                Tab(text: 'Partidos'),
-                Tab(text: 'Estadísticas'),
-                Tab(text: 'Alineaciones'),
+                Tab(child: Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('Partidos', textAlign: TextAlign.center))),
+                Tab(child: Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('Estadísticas', textAlign: TextAlign.center, maxLines: 2))),
+                Tab(child: Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('Minuto\na Minuto', textAlign: TextAlign.center))),
+                Tab(child: Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('Alineaciones', textAlign: TextAlign.center, maxLines: 2))),
               ],
             ),
             
@@ -117,6 +124,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                     children: [
                       TeamMatchesTab(match: match),
                       MatchStatsView(summary: summary, match: match),
+                      MatchTimelineView(match: match),
                       MatchRostersView(summary: summary, match: match),
                     ],
                   );

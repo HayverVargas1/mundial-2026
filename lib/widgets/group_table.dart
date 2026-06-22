@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/group_model.dart';
 import '../core/constants/app_colors.dart';
-import '../core/constants/app_strings.dart';
 import 'team_flag.dart';
+import 'team_match_navigator.dart';
 
-class GroupTable extends StatelessWidget {
+class GroupTable extends ConsumerWidget {
   final GroupModel group;
   final Set<String> topThirdPlacesIds;
   final bool showHeader;
@@ -19,7 +20,7 @@ class GroupTable extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       margin:
           margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -155,7 +156,13 @@ class GroupTable extends StatelessWidget {
                       _buildCell('${standing.goalDifference}'),
                       _buildCell('${standing.points}',
                           isBold: true, fontSize: 13),
-                    ],
+                    ].map((widget) => GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        navigateToNextMatch(context, ref, team);
+                      },
+                      child: widget,
+                    )).toList(),
                   );
                 }).toList(),
               ],

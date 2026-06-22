@@ -25,8 +25,11 @@ class EspnConstants {
   static String get teamsUrl =>
       '$siteApiV2/sports/$sport/$league/teams';
 
+  static String get statisticsUrl =>
+      '$siteApiV2/sports/$sport/$league/statistics?lang=es&region=co';
+
   static String summaryUrl(String eventId) =>
-      '$siteApiV2/sports/$sport/$league/summary?event=$eventId';
+      '$siteApiV2/sports/$sport/$league/summary?event=$eventId&lang=es&region=co';
 
   static String get newsUrl =>
       '$siteApiV2/sports/$sport/$league/news';

@@ -9,8 +9,22 @@ void main() async {
     final eventId = data['events'][0]['id'];
     print('Event ID: $eventId');
     final summaryRes = await http.get(Uri.parse('https://site.api.espn.com/apis/site/v2/sports/soccer/all/summary?event=$eventId'));
-    print('Summary keys: ${json.decode(summaryRes.body).keys}');
-    print('Boxscore: ${json.decode(summaryRes.body)['boxscore']?.keys}');
-    print('Rosters: ${json.decode(summaryRes.body)['rosters']?.map((r) => r['team']['displayName']).toList()}');
+    final summaryData = json.decode(summaryRes.body);
+    print('Summary keys: ${summaryData.keys}');
+    if (summaryData['commentary'] != null) {
+      final commentary = summaryData['commentary'] as List;
+      print('Commentary length: ${commentary.length}');
+      if (commentary.isNotEmpty) {
+        print('First commentary: ${commentary[0]['text']}');
+      }
+    } else if (summaryData['plays'] != null) {
+      final plays = summaryData['plays'] as List;
+      print('Plays length: ${plays.length}');
+      if (plays.isNotEmpty) {
+        print('First play: ${plays[0]['text']}');
+      }
+    } else {
+      print('No commentary or plays found.');
+    }
   }
 }

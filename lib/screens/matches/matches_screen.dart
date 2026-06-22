@@ -9,6 +9,7 @@ import '../../widgets/loading_skeleton.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/match_model.dart';
+import '../alerts/alerts_screen.dart';
 
 class MatchesScreen extends ConsumerWidget {
   const MatchesScreen({Key? key}) : super(key: key);
@@ -46,7 +47,12 @@ class MatchesScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(right: 16),
             child: Center(
               child: GestureDetector(
-                onTap: () => ref.invalidate(matchesProvider),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AlertsScreen()),
+                  );
+                },
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(

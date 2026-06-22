@@ -1,3 +1,5 @@
+import 'commentary_model.dart';
+
 class MatchSummaryModel {
   final List<TeamStat> homeStats;
   final List<TeamStat> awayStats;
@@ -5,6 +7,7 @@ class MatchSummaryModel {
   final List<PlayerRoster> awayRoster;
   final String homeFormation;
   final String awayFormation;
+  final List<CommentaryModel> commentaries;
 
   MatchSummaryModel({
     this.homeStats = const [],
@@ -13,6 +16,7 @@ class MatchSummaryModel {
     this.awayRoster = const [],
     this.homeFormation = '',
     this.awayFormation = '',
+    this.commentaries = const [],
   });
 
   factory MatchSummaryModel.fromJson(Map<String, dynamic> json) {
@@ -73,6 +77,15 @@ class MatchSummaryModel {
       }
     }
 
+    List<CommentaryModel> parsedCommentaries = [];
+    if (json['commentary'] != null) {
+      final commList = json['commentary'] as List;
+      parsedCommentaries = commList.map((c) => CommentaryModel.fromJson(c)).toList();
+    } else if (json['plays'] != null) {
+      final playsList = json['plays'] as List;
+      parsedCommentaries = playsList.map((p) => CommentaryModel.fromJson(p)).toList();
+    }
+
     return MatchSummaryModel(
       homeStats: homeS,
       awayStats: awayS,
@@ -80,6 +93,7 @@ class MatchSummaryModel {
       awayRoster: awayR,
       homeFormation: homeF,
       awayFormation: awayF,
+      commentaries: parsedCommentaries,
     );
   }
 }

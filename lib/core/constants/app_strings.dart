@@ -11,6 +11,7 @@ class AppStrings {
   static const String navMatches = 'Partidos';
   static const String navGroups = 'Grupos';
   static const String navBracket = 'Llaves';
+  static const String navRanking = 'Ranking';
   static const String navAlerts = 'Alertas';
 
   // Matches Screen

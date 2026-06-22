@@ -4,11 +4,13 @@ import 'dart:async';
 import '../models/match_model.dart';
 import '../models/group_model.dart';
 import '../models/match_summary_model.dart';
+import '../models/statistic_model.dart';
 import '../core/constants/espn_constants.dart';
 import '../core/utils/date_utils.dart';
 import '../services/espn_service.dart';
 import '../services/matches_service.dart';
 import '../services/standings_service.dart';
+import '../services/statistics_service.dart';
 import '../repositories/matches_repository.dart';
 import '../repositories/standings_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +25,11 @@ final espnServiceProvider = Provider((ref) => EspnService());
 final matchesServiceProvider = Provider((ref) {
   final api = ref.watch(espnServiceProvider);
   return MatchesService(api);
+});
+
+final statisticsServiceProvider = Provider((ref) {
+  final api = ref.watch(espnServiceProvider);
+  return StatisticsService(api);
 });
 
 final standingsServiceProvider = Provider((ref) {
@@ -136,4 +143,10 @@ final matchDetailsProvider = FutureProvider.family
   return MatchSummaryModel.fromJson(data);
 });
 
+final statisticsProvider = FutureProvider.autoDispose<List<StatisticCategoryModel>>((ref) async {
+  final service = ref.watch(statisticsServiceProvider);
+  return service.getStatistics();
+});
+
 final goalCelebrationProvider = StateProvider<bool>((ref) => false);
+
