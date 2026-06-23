@@ -356,12 +356,26 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
 String _translatePhase(String raw) {
   if (raw.isEmpty) return 'Fase de Grupos';
   final lower = raw.toLowerCase();
-  if (lower.contains('third')) return 'Tercer Lugar';
-  if (lower.contains('final') && !lower.contains('semi') && !lower.contains('quarter') && !lower.contains('round')) return 'Final';
-  if (lower.contains('semi')) return 'Semifinal';
+  // ESPN slug formats (e.g. from season.type.slug)
+  if (lower == 'round-of-16' || lower == 'round-of-sixteen') return 'Octavos de Final';
+  if (lower == 'round-of-32') return 'Ronda de 32';
+  if (lower == 'quarterfinal' || lower == 'quarterfinals' || lower == 'quarter-final') return 'Cuartos de Final';
+  if (lower == 'semifinal' || lower == 'semifinals' || lower == 'semi-final') return 'Semifinal';
+  if (lower == 'final') return 'Final';
+  if (lower == 'third-place' || lower == 'third place') return 'Tercer Lugar';
+  // Free-text formats
+  if (lower.contains('third') && lower.contains('place')) return 'Tercer Lugar';
+  if (lower.contains('semifinal') || lower.contains('semi final') || lower.contains('semi-final')) return 'Semifinal';
   if (lower.contains('quarter')) return 'Cuartos de Final';
   if (lower.contains('round of 16') || lower.contains('round of sixteen')) return 'Octavos de Final';
   if (lower.contains('round of 32')) return 'Ronda de 32';
-  // Group stage: "Group A" → "Grupo A"
-  return raw.replaceAll('Group', 'Grupo').replaceAll('group', 'Grupo');
+  if (lower.contains('final') && !lower.contains('semi') && !lower.contains('quarter') && !lower.contains('round')) return 'Final';
+  // Group stage: "Group A", "Grupo B", single letter
+  if (lower.startsWith('group ') || lower.startsWith('grupo ')) {
+    return raw.replaceAll('Group ', 'Grupo ').replaceAll('group ', 'Grupo ');
+  }
+  if (raw.length <= 2 && RegExp(r'^[A-Pa-p]$').hasMatch(raw.trim())) {
+    return 'Grupo ${raw.trim().toUpperCase()}';
+  }
+  return raw.length > 2 ? raw : 'Fase de Grupos';
 }

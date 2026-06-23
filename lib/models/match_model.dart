@@ -111,12 +111,47 @@ class MatchModel {
     }
 
     String? groupName;
+    // 1. notes[].headline — group stage: "Group A", knockout: usually empty
     if (json['notes'] != null && (json['notes'] as List).isNotEmpty) {
-      groupName = json['notes'][0]['headline']?.toString();
-    } else if (competition['notes'] != null && (competition['notes'] as List).isNotEmpty) {
-      groupName = competition['notes'][0]['headline']?.toString();
+      final headline = json['notes'][0]['headline']?.toString();
+      if (headline != null && headline.isNotEmpty) groupName = headline;
     }
-    // null means unknown phase — display layer will fall back to 'Fase de Grupos'
+    if (groupName == null && competition['notes'] != null && (competition['notes'] as List).isNotEmpty) {
+      final headline = competition['notes'][0]['headline']?.toString();
+      if (headline != null && headline.isNotEmpty) groupName = headline;
+    }
+    // 2. season slug — ESPN sends season.type as an int in some responses,
+    // so we must guard with `is Map` before accessing nested keys.
+    if (groupName == null) {
+      String? seasonSlug;
+      final season = json['season'];
+      if (season is Map) {
+        final seasonType = season['type'];
+        if (seasonType is Map) {
+          seasonSlug = seasonType['slug']?.toString();
+        }
+        seasonSlug ??= season['slug']?.toString();
+      }
+      if (seasonSlug != null && seasonSlug.isNotEmpty &&
+          seasonSlug != 'regular-season' && seasonSlug != 'group-stage') {
+        groupName = seasonSlug;
+      }
+    }
+    // 3. competition.type.text — guard with is Map too
+    if (groupName == null) {
+      final compType = competition['type'];
+      if (compType is Map) {
+        final text = compType['text']?.toString();
+        if (text != null && text.isNotEmpty) groupName = text;
+      }
+    }
+    // 4. Extract phase from event name as last resort
+    if (groupName == null) {
+      final eventName = json['name']?.toString() ?? '';
+      final shortName = json['shortName']?.toString() ?? '';
+      groupName = _extractPhaseFromName(eventName) ?? _extractPhaseFromName(shortName);
+    }
+
 
     String? displayClock;
     double? clockSeconds;
@@ -185,6 +220,32 @@ class MatchModel {
 }
 
 enum MatchStatus { upcoming, live, finished, unknown }
+
+/// Extracts a known tournament phase keyword from a free-form event name string.
+/// Returns null if no known phase keyword is found.
+String? _extractPhaseFromName(String name) {
+  if (name.isEmpty) return null;
+  final lower = name.toLowerCase();
+  // Known knockout-round markers
+  const patterns = [
+    'round of 16', 'round of sixteen',
+    'round of 32',
+    'quarter', 'quarterfinal', 'quarter-final',
+    'semi', 'semifinal', 'semi-final',
+    'third place', 'third-place',
+    ' final',
+    'grupo ', 'group ',
+  ];
+  for (final p in patterns) {
+    if (lower.contains(p)) {
+      // Return the portion of the name from the keyword onward (trimmed)
+      final idx = lower.indexOf(p);
+      return name.substring(idx).split(' - ').first.trim();
+    }
+  }
+  return null;
+}
+
 
 class Venue {
   final String id;
