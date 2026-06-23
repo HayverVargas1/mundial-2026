@@ -285,6 +285,21 @@ class RankingScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
+                      // Stats row — partidos y goles
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          const Icon(Icons.sports_soccer, size: 11, color: AppColors.primary),
+                          const SizedBox(width: 3),
+                          Text(
+                            'PJ: ${leader.gamesPlayed}  •  Goles: ${leader.goals}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

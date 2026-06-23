@@ -30,6 +30,12 @@ class LiveBadge extends ConsumerWidget {
     if (isHalftime) {
       return 'DESCANSO';
     }
+
+    // Detect halftime by position: period 1, stopped clock, at or past 45 min
+    if (!isTicking && period == 1 && currentSeconds >= 2700) {
+      return 'DESCANSO';
+    }
+
     if (!isTicking) {
       return clock ?? 'EN ESPERA';
     }

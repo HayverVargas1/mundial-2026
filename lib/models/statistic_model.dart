@@ -35,6 +35,8 @@ class StatisticLeaderModel {
   final String teamName;
   final String teamLogo;
   final String athletePosition;
+  final int gamesPlayed;
+  final int goals;
 
   StatisticLeaderModel({
     required this.displayValue,
@@ -46,6 +48,8 @@ class StatisticLeaderModel {
     required this.teamName,
     required this.teamLogo,
     required this.athletePosition,
+    this.gamesPlayed = 0,
+    this.goals = 0,
   });
 
   factory StatisticLeaderModel.fromJson(Map<String, dynamic> json) {
@@ -75,6 +79,8 @@ class StatisticLeaderModel {
       teamName: team['displayName'] ?? team['name'] ?? '',
       teamLogo: teamLogo,
       athletePosition: position['abbreviation'] ?? position['name'] ?? '',
+      gamesPlayed: int.tryParse(athlete['gamesPlayed']?.toString() ?? '') ?? 0,
+      goals: int.tryParse(athlete['goals']?.toString() ?? '') ?? 0,
     );
   }
 }
