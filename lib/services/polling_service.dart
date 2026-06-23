@@ -32,6 +32,15 @@ class PollingService {
   bool _isFirstPoll = true;
   SharedPreferences? _prefs;
 
+  // Adaptive polling state
+  bool _hasLiveMatches = false;
+  bool _hasUpcomingMatches = false;
+
+  // Polling intervals
+  static const Duration _intervalLive     = Duration(seconds: 5);   // Partido en vivo
+  static const Duration _intervalUpcoming = Duration(seconds: 20);  // Próximos partidos
+  static const Duration _intervalIdle     = Duration(seconds: 60);  // Sin actividad
+
   Future<void> start(ProviderContainer container, {bool sendNotifications = true, bool updateWidget = true}) async {
     _container = container;
     _sendNotifications = sendNotifications;
@@ -64,10 +73,7 @@ class PollingService {
     // Keep provider alive in this isolate
     _container!.listen(allMatchesProvider, (_, __) {});
     
-    // Poll every 20 seconds
-    _timer = Timer.periodic(const Duration(seconds: 20), (timer) {
-      _checkLiveUpdates();
-    });
+    // Adaptive polling: inicia tras el primer check
     
     int lastKnownFetchTime = 0;
     
@@ -110,8 +116,29 @@ class PollingService {
       }
     });
     
-    // Initial check
-    _checkLiveUpdates();
+    // Initial check — luego programa el siguiente ciclo adaptativamente
+    await _checkLiveUpdates();
+    _scheduleNextPoll();
+  }
+
+  /// Reprograma el próximo poll basándose en el estado actual de los partidos.
+  void _scheduleNextPoll() {
+    _timer?.cancel();
+    if (_container == null) return;
+
+    final Duration interval;
+    if (_hasLiveMatches) {
+      interval = _intervalLive;
+    } else if (_hasUpcomingMatches) {
+      interval = _intervalUpcoming;
+    } else {
+      interval = _intervalIdle;
+    }
+
+    _timer = Timer(interval, () async {
+      await _checkLiveUpdates();
+      _scheduleNextPoll();
+    });
   }
 
   Future<void> _updateLiveWidgetClock() async {
@@ -172,6 +199,7 @@ class PollingService {
       if (!matchesAsync.hasValue) return;
       final matches = matchesAsync.value!;
       bool hasLiveMatches = false;
+      bool hasUpcomingMatches = false;
       _liveMatchIds.clear();
 
       // Notification Preferences
@@ -183,6 +211,7 @@ class PollingService {
 
       for (var match in matches) {
         if (match.status == MatchStatus.upcoming) {
+          hasUpcomingMatches = true;
           if (!_15MinMatches.contains(match.id)) {
             final now = DateTime.now();
             final diff = match.date.difference(now);
@@ -352,6 +381,10 @@ class PollingService {
         }
       }
       
+      // Actualizar estado adaptativo
+      _hasLiveMatches = hasLiveMatches;
+      _hasUpcomingMatches = hasUpcomingMatches;
+
       if (hasLiveMatches) {
         _container!.invalidate(groupsProvider);
       }
