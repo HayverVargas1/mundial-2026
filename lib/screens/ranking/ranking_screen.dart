@@ -46,11 +46,13 @@ class RankingScreen extends ConsumerWidget {
                 // "Updated at" banner
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
                   color: AppColors.surface,
                   child: Row(
                     children: [
-                      const Icon(Icons.access_time, size: 13, color: AppColors.textSecondary),
+                      const Icon(Icons.access_time,
+                          size: 13, color: AppColors.textSecondary),
                       const SizedBox(width: 6),
                       Text(
                         'Actualizado el $formatted',
@@ -110,7 +112,8 @@ class RankingScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: AppColors.textSecondary, size: 48),
+              const Icon(Icons.error_outline,
+                  color: AppColors.textSecondary, size: 48),
               const SizedBox(height: 16),
               Text(
                 AppStrings.errorLoadFailed,
@@ -242,14 +245,16 @@ class RankingScreen extends ConsumerWidget {
                       Row(
                         children: [
                           if (isFirst) ...[
-                            const Icon(Icons.emoji_events, color: Colors.amber, size: 15),
+                            const Icon(Icons.emoji_events,
+                                color: Colors.amber, size: 15),
                             const SizedBox(width: 4),
                           ],
                           Expanded(
                             child: Text(
                               leader.athleteName,
                               style: TextStyle(
-                                fontWeight: isFirst ? FontWeight.w800 : FontWeight.w600,
+                                fontWeight:
+                                    isFirst ? FontWeight.w800 : FontWeight.w600,
                                 fontSize: isFirst ? 15 : 14,
                                 color: Colors.white,
                               ),
@@ -268,7 +273,8 @@ class RankingScreen extends ConsumerWidget {
                               leader.teamLogo,
                               width: 14,
                               height: 14,
-                              errorBuilder: (_, __, ___) => const SizedBox(width: 14),
+                              errorBuilder: (_, __, ___) =>
+                                  const SizedBox(width: 14),
                             ),
                             const SizedBox(width: 4),
                           ],
@@ -279,20 +285,21 @@ class RankingScreen extends ConsumerWidget {
                                 color: AppColors.textSecondary,
                                 fontSize: 12,
                               ),
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
-                      // Stats row — partidos y goles
-                      const SizedBox(height: 3),
+                      // Stats row — partidos jugados y valor principal (goles, asistencias, etc.)
+                      const SizedBox(height: 1),
                       Row(
                         children: [
-                          const Icon(Icons.sports_soccer, size: 11, color: AppColors.primary),
+                          const Icon(Icons.sports_soccer,
+                              size: 11, color: AppColors.primary),
                           const SizedBox(width: 3),
                           Text(
-                            'PJ: ${leader.gamesPlayed}  •  Goles: ${leader.goals}',
+                            '${leader.displayValue}',
                             style: const TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 11,
@@ -301,28 +308,6 @@ class RankingScreen extends ConsumerWidget {
                         ],
                       ),
                     ],
-                  ),
-                ),
-
-                const SizedBox(width: 8),
-                // Value badge — fixed width so it never overlaps text
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isFirst
-                        ? Colors.amber
-                        : isTop3
-                            ? AppColors.primary
-                            : Colors.white.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    leader.displayValue,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: isFirst ? 17 : 15,
-                      color: isFirst || isTop3 ? Colors.white : AppColors.textSecondary,
-                    ),
                   ),
                 ),
               ],

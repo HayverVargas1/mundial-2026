@@ -7,7 +7,6 @@ import 'live_badge.dart';
 import '../screens/match_details/match_details_screen.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/app_providers.dart';
 
 class MatchCard extends ConsumerWidget {
   final MatchModel match;
@@ -81,17 +80,10 @@ class MatchCard extends ConsumerWidget {
     final home = match.homeTeam;
     final away = match.awayTeam;
     
-    String displayGroupName = match.groupName ?? 'Fase de Grupos';
-    final groupsAsync = ref.watch(groupsProvider);
-    if (groupsAsync.hasValue && home != null) {
-      for (var group in groupsAsync.value!) {
-        if (group.standings.any((s) => s.team.id == home.id)) {
-          displayGroupName = group.name.replaceAll('Group', 'Grupo').replaceAll('group', 'Grupo');
-          break;
-        }
-      }
-    }
-
+    // Build phase label from match data only — do NOT override with groupsProvider
+    // because knockout-round teams still appear in group standings.
+    final raw = match.groupName ?? '';
+    final String displayGroupName = _translatePhase(raw);
 
     final homeIsWinner = match.status == MatchStatus.finished && 
         (home?.winner == true || (home?.score != null && away?.score != null && int.tryParse(home!.score!) != null && int.tryParse(away!.score!) != null && int.parse(home!.score!) > int.parse(away!.score!)));
@@ -136,7 +128,7 @@ class MatchCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Fase de Grupos',
+                    displayGroupName,
                     style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 10,
@@ -144,18 +136,6 @@ class MatchCard extends ConsumerWidget {
                       letterSpacing: 1,
                     ),
                   ),
-                  if (displayGroupName != 'Fase de Grupos')
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        displayGroupName,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
                 ],
               ),
               if (match.status == MatchStatus.live)
@@ -283,4 +263,17 @@ class MatchCard extends ConsumerWidget {
     ),
     );
   }
+}
+
+String _translatePhase(String raw) {
+  if (raw.isEmpty) return 'Fase de Grupos';
+  final lower = raw.toLowerCase();
+  if (lower.contains('final') && lower.contains('third')) return 'Tercer Lugar';
+  if (lower.contains('final') && !lower.contains('semi') && !lower.contains('quarter') && !lower.contains('round')) return 'Final';
+  if (lower.contains('semi')) return 'Semifinal';
+  if (lower.contains('quarter')) return 'Cuartos de Final';
+  if (lower.contains('round of 16') || lower.contains('round of sixteen')) return 'Octavos de Final';
+  if (lower.contains('round of 32')) return 'Ronda de 32';
+  // Group phase: "Group A", "Grupo B", etc.
+  return raw.replaceAll('Group', 'Grupo').replaceAll('group', 'Grupo');
 }

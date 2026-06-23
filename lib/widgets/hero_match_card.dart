@@ -176,32 +176,10 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
     final home = match.homeTeam;
     final away = match.awayTeam;
 
-    // Build display phase name
-    String displayGroupName = '';
-    final groupsAsync = ref.watch(groupsProvider);
-    if (groupsAsync.hasValue && home != null) {
-      for (var group in groupsAsync.value!) {
-        if (group.standings.any((s) => s.team.id == home.id)) {
-          displayGroupName = group.name
-              .replaceAll('Group', 'Grupo')
-              .replaceAll('group', 'Grupo');
-          break;
-        }
-      }
-    }
-    // Fallback to groupName from match
-    if (displayGroupName.isEmpty) {
-      final raw = match.groupName ?? '';
-      displayGroupName = raw
-          .replaceAll('Group', 'Grupo')
-          .replaceAll('group', 'Grupo')
-          .replaceAll('Round of 16', 'Octavos de Final')
-          .replaceAll('Quarterfinal', 'Cuartos de Final')
-          .replaceAll('Semifinal', 'Semifinal')
-          .replaceAll('Final', 'Final')
-          .replaceAll('Third Place', 'Tercer Lugar');
-      if (displayGroupName.isEmpty) displayGroupName = 'Fase de Grupos';
-    }
+    // Phase label — from match data only, never from standings
+    // (standings still list knockout teams under their group, causing wrong labels)
+    final raw = match.groupName ?? '';
+    final String displayGroupName = _translatePhase(raw);
 
     final homeIsWinner = match.status == MatchStatus.finished &&
         (home?.winner == true ||
@@ -348,10 +326,14 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
               ],
             ),
 
+            // Show goals section for live/finished
             if (match.status == MatchStatus.live || match.status == MatchStatus.finished)
               _buildGoals(),
 
-            if (match.status == MatchStatus.live)
+            // Show commentary only once the match has actually kicked off
+            // (clockSeconds > 0 means at least some play has happened)
+            if (match.status == MatchStatus.live &&
+                (match.isTicking || match.isHalftime || (match.clockSeconds ?? 0) > 60))
               _buildLiveCommentary(context),
 
             const SizedBox(height: 16),
@@ -369,4 +351,17 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
       ),
     );
   }
+}
+/// Translates ESPN phase/round names to Spanish.
+String _translatePhase(String raw) {
+  if (raw.isEmpty) return 'Fase de Grupos';
+  final lower = raw.toLowerCase();
+  if (lower.contains('third')) return 'Tercer Lugar';
+  if (lower.contains('final') && !lower.contains('semi') && !lower.contains('quarter') && !lower.contains('round')) return 'Final';
+  if (lower.contains('semi')) return 'Semifinal';
+  if (lower.contains('quarter')) return 'Cuartos de Final';
+  if (lower.contains('round of 16') || lower.contains('round of sixteen')) return 'Octavos de Final';
+  if (lower.contains('round of 32')) return 'Ronda de 32';
+  // Group stage: "Group A" → "Grupo A"
+  return raw.replaceAll('Group', 'Grupo').replaceAll('group', 'Grupo');
 }

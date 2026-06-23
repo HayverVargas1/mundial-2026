@@ -112,12 +112,11 @@ class MatchModel {
 
     String? groupName;
     if (json['notes'] != null && (json['notes'] as List).isNotEmpty) {
-      groupName = json['notes'][0]['headline'];
+      groupName = json['notes'][0]['headline']?.toString();
     } else if (competition['notes'] != null && (competition['notes'] as List).isNotEmpty) {
-      groupName = competition['notes'][0]['headline'];
-    } else {
-      groupName = 'Fase de Grupos';
+      groupName = competition['notes'][0]['headline']?.toString();
     }
+    // null means unknown phase — display layer will fall back to 'Fase de Grupos'
 
     String? displayClock;
     double? clockSeconds;
