@@ -7,6 +7,7 @@ import '../../widgets/date_selector.dart';
 import '../../widgets/loading_skeleton.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/match_model.dart';
 import '../alerts/alerts_screen.dart';
 
 class MatchesScreen extends ConsumerStatefulWidget {
@@ -59,7 +60,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const AlertsScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const AlertsScreen()),
                   );
                 },
                 child: Container(
@@ -132,7 +134,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                                 heroMatches.length,
                                 (i) => AnimatedContainer(
                                   duration: const Duration(milliseconds: 250),
-                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 3),
                                   width: i == _currentPage ? 18 : 7,
                                   height: 7,
                                   decoration: BoxDecoration(
@@ -155,7 +158,9 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: SizedBox(height: 220, child: const LoadingSkeleton(isSingleItem: true)),
+                    child: SizedBox(
+                        height: 220,
+                        child: const LoadingSkeleton(isSingleItem: true)),
                   ),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -173,7 +178,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                   return [
                     const SliverFillRemaining(
                       child: Center(
-                        child: Text(AppStrings.errorNoMatches, style: TextStyle(color: AppColors.textSecondary)),
+                        child: Text(AppStrings.errorNoMatches,
+                            style: TextStyle(color: AppColors.textSecondary)),
                       ),
                     ),
                   ];
@@ -188,7 +194,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                   ),
                 ];
               },
-              loading: () => [const SliverToBoxAdapter(child: LoadingSkeleton())],
+              loading: () =>
+                  [const SliverToBoxAdapter(child: LoadingSkeleton())],
               error: (e, st) => [
                 const SliverToBoxAdapter(
                   child: Center(child: Text(AppStrings.errorLoadFailed)),
@@ -203,10 +210,16 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
     );
   }
 
-  /// Approximate card height so the Stack doesn't collapse.
-  /// Live matches with commentary are taller.
-  double _estimateCardHeight(List matches) {
-    // Enough for the tallest card (live with 2 commentary items)
-    return 420;
+  /// Altura del card según estado del partido para evitar espacio en blanco.
+  double _estimateCardHeight(List<MatchModel> matches) {
+    if (matches.isEmpty) return 280;
+    final match = matches[_currentPage < matches.length ? _currentPage : 0];
+    if (match.status == MatchStatus.live) {
+      return 420; // En vivo: con comentarios y reloj
+    } else if (match.status == MatchStatus.finished) {
+      return 320; // Finalizado: con goles pero sin comentarios
+    } else {
+      return 210; // Próximo: solo equipos y countdown
+    }
   }
 }

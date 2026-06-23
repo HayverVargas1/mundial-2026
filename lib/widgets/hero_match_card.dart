@@ -336,7 +336,7 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
                 (match.isTicking || match.isHalftime || (match.clockSeconds ?? 0) > 60))
               _buildLiveCommentary(context),
 
-            const SizedBox(height: 16),
+            SizedBox(height: match.status == MatchStatus.upcoming ? 4 : 16),
             const Divider(color: AppColors.borderLight, height: 1),
             const SizedBox(height: 10),
 
