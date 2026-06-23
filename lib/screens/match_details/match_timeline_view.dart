@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/match_model.dart';
 import '../../providers/app_providers.dart';
 import '../../core/constants/app_colors.dart';
+import '../../widgets/event_icon_helper.dart';
 
 class MatchTimelineView extends ConsumerStatefulWidget {
   final MatchModel match;
@@ -20,7 +21,6 @@ class _MatchTimelineViewState extends ConsumerState<MatchTimelineView> {
   @override
   void initState() {
     super.initState();
-    // Auto-refresh every 30s if match is live
     if (widget.match.status == MatchStatus.live) {
       _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
         ref.invalidate(matchDetailsProvider(widget.match.id));
@@ -49,7 +49,7 @@ class _MatchTimelineViewState extends ConsumerState<MatchTimelineView> {
           );
         }
 
-        // Reverse: most recent first
+        // Most recent first
         final items = summary.commentaries.reversed.toList();
 
         return ListView.builder(
@@ -57,72 +57,91 @@ class _MatchTimelineViewState extends ConsumerState<MatchTimelineView> {
           itemCount: items.length,
           itemBuilder: (context, index) {
             final c = items[index];
-            final isFirst = index == 0 && widget.match.status == MatchStatus.live;
+            final isNewest = index == 0 && widget.match.status == MatchStatus.live;
+            final isKeyEvent = c.eventType == 'goal' || c.eventType == 'redCard';
+
+            final bgColor = isNewest
+                ? AppColors.live.withOpacity(0.07)
+                : isKeyEvent
+                    ? eventTypeColor(c.eventType)
+                    : Colors.transparent;
+
+            final borderColor = isNewest
+                ? AppColors.live.withOpacity(0.3)
+                : isKeyEvent
+                    ? eventTypeBorderColor(c.eventType)
+                    : AppColors.border.withOpacity(0.4);
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Time column
+                  // Time + live dot
                   SizedBox(
-                    width: 50,
+                    width: 46,
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        if (isFirst)
+                        if (isNewest)
                           Container(
-                            width: 8,
-                            height: 8,
-                            margin: const EdgeInsets.only(bottom: 4),
-                            decoration: const BoxDecoration(
-                              color: AppColors.live,
-                              shape: BoxShape.circle,
-                            ),
+                            width: 8, height: 8,
+                            margin: const EdgeInsets.only(bottom: 3),
+                            decoration: const BoxDecoration(color: AppColors.live, shape: BoxShape.circle),
                           ),
                         Text(
                           c.time.isNotEmpty ? c.time : '—',
                           style: TextStyle(
-                            color: isFirst ? AppColors.live : AppColors.primary,
+                            color: isNewest ? AppColors.live : AppColors.primary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 13,
                           ),
                           textAlign: TextAlign.center,
                         ),
                       ],
                     ),
                   ),
-                  // Line
+                  // Timeline line
                   Container(
                     width: 2,
-                    height: 40,
-                    color: isFirst
-                        ? AppColors.live.withOpacity(0.5)
-                        : AppColors.border,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    height: isKeyEvent ? 52 : 40,
+                    color: isNewest
+                        ? AppColors.live.withOpacity(0.4)
+                        : isKeyEvent
+                            ? eventTypeBorderColor(c.eventType)
+                            : AppColors.border,
+                    margin: const EdgeInsets.symmetric(horizontal: 12),
                   ),
                   // Comment bubble
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: isFirst
-                            ? AppColors.live.withOpacity(0.08)
-                            : AppColors.surface,
+                        color: bgColor == Colors.transparent ? AppColors.surface : bgColor,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isFirst
-                              ? AppColors.live.withOpacity(0.3)
-                              : AppColors.border.withOpacity(0.5),
-                        ),
+                        border: Border.all(color: borderColor),
                       ),
-                      child: Text(
-                        c.text,
-                        style: TextStyle(
-                          color: isFirst ? Colors.white : Colors.white70,
-                          fontSize: 13,
-                          height: 1.4,
-                          fontWeight: isFirst ? FontWeight.w500 : FontWeight.normal,
-                        ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Event icon
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8, top: 1),
+                            child: buildEventIcon(c.eventType, size: 16),
+                          ),
+                          // Text
+                          Expanded(
+                            child: Text(
+                              c.text,
+                              style: TextStyle(
+                                color: isNewest ? Colors.white : Colors.white70,
+                                fontSize: 13,
+                                height: 1.4,
+                                fontWeight: isKeyEvent ? FontWeight.w600 : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -132,14 +151,9 @@ class _MatchTimelineViewState extends ConsumerState<MatchTimelineView> {
           },
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      ),
-      error: (e, _) => Center(
-        child: Text(
-          'Error cargando comentarios',
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
+      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      error: (e, _) => const Center(
+        child: Text('Error cargando comentarios', style: TextStyle(color: AppColors.textSecondary)),
       ),
     );
   }

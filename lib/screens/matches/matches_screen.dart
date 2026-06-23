@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../providers/app_providers.dart';
 import '../../widgets/hero_match_card.dart';
 import '../../widgets/match_card.dart';
@@ -8,16 +7,29 @@ import '../../widgets/date_selector.dart';
 import '../../widgets/loading_skeleton.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_colors.dart';
-import '../../models/match_model.dart';
 import '../alerts/alerts_screen.dart';
 
-class MatchesScreen extends ConsumerWidget {
+class MatchesScreen extends ConsumerStatefulWidget {
   const MatchesScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MatchesScreen> createState() => _MatchesScreenState();
+}
+
+class _MatchesScreenState extends ConsumerState<MatchesScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final matchesAsync = ref.watch(matchesProvider);
-    final heroMatchAsync = ref.watch(heroMatchProvider);
+    final heroMatchesAsync = ref.watch(heroMatchesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -35,10 +47,7 @@ class MatchesScreen extends ConsumerWidget {
             ),
             const Text(
               AppStrings.appName,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
             ),
           ],
         ),
@@ -83,46 +92,79 @@ class MatchesScreen extends ConsumerWidget {
         backgroundColor: AppColors.surface,
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(
-              child: const SizedBox(height: 16),
-            ),
-            
-            // Hero Match
-            ...heroMatchAsync.when(
-              data: (heroMatch) {
-                if (heroMatch == null) return [];
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+            // Hero Matches Slider
+            ...heroMatchesAsync.when(
+              data: (heroMatches) {
+                if (heroMatches.isEmpty) return [];
+
+                final isMultiple = heroMatches.length > 1;
+
                 return [
                   SliverToBoxAdapter(
-                    child: HeroMatchCard(match: heroMatch),
+                    child: Stack(
+                      children: [
+                        // PageView of hero cards
+                        SizedBox(
+                          height: _estimateCardHeight(heroMatches),
+                          child: PageView.builder(
+                            controller: _pageController,
+                            itemCount: heroMatches.length,
+                            onPageChanged: (index) {
+                              setState(() => _currentPage = index);
+                            },
+                            itemBuilder: (context, index) {
+                              return HeroMatchCard(match: heroMatches[index]);
+                            },
+                          ),
+                        ),
+
+                        // Dot indicators — absolutely positioned at top, no spacing impact
+                        if (isMultiple)
+                          Positioned(
+                            top: 8,
+                            left: 0,
+                            right: 0,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                heroMatches.length,
+                                (i) => AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  width: i == _currentPage ? 18 : 7,
+                                  height: 7,
+                                  decoration: BoxDecoration(
+                                    color: i == _currentPage
+                                        ? AppColors.primary
+                                        : Colors.white.withOpacity(0.35),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 24),
-                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ];
               },
               loading: () => [
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: SizedBox(
-                      height: 200,
-                      child: const LoadingSkeleton(isSingleItem: true),
-                    ),
+                    child: SizedBox(height: 220, child: const LoadingSkeleton(isSingleItem: true)),
                   ),
                 ),
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 24),
-                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 24)),
               ],
               error: (e, st) => [],
             ),
-            
-            const SliverToBoxAdapter(
-              child: DateSelector(),
-            ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 16),
-            ),
+
+            const SliverToBoxAdapter(child: DateSelector()),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
             // Matches List
             ...matchesAsync.when(
@@ -131,10 +173,7 @@ class MatchesScreen extends ConsumerWidget {
                   return [
                     const SliverFillRemaining(
                       child: Center(
-                        child: Text(
-                          AppStrings.errorNoMatches,
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
+                        child: Text(AppStrings.errorNoMatches, style: TextStyle(color: AppColors.textSecondary)),
                       ),
                     ),
                   ];
@@ -143,30 +182,31 @@ class MatchesScreen extends ConsumerWidget {
                 return [
                   SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        return MatchCard(match: matches[index]);
-                      },
+                      (context, index) => MatchCard(match: matches[index]),
                       childCount: matches.length,
                     ),
                   ),
                 ];
               },
-              loading: () => [
-                const SliverToBoxAdapter(child: LoadingSkeleton()),
-              ],
+              loading: () => [const SliverToBoxAdapter(child: LoadingSkeleton())],
               error: (e, st) => [
                 const SliverToBoxAdapter(
                   child: Center(child: Text(AppStrings.errorLoadFailed)),
                 ),
               ],
             ),
-            
-            SliverToBoxAdapter(
-              child: const SizedBox(height: 32),
-            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 32)),
           ],
         ),
       ),
     );
+  }
+
+  /// Approximate card height so the Stack doesn't collapse.
+  /// Live matches with commentary are taller.
+  double _estimateCardHeight(List matches) {
+    // Enough for the tallest card (live with 2 commentary items)
+    return 420;
   }
 }

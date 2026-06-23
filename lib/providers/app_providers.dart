@@ -130,6 +130,36 @@ final heroMatchProvider = Provider.autoDispose<AsyncValue<MatchModel?>>((ref) {
   return const AsyncValue.loading();
 });
 
+/// Returns ALL live matches for the hero slider. Falls back to [heroMatchProvider] logic.
+final heroMatchesProvider = Provider.autoDispose<AsyncValue<List<MatchModel>>>((ref) {
+  final globalAsync = ref.watch(allMatchesProvider);
+
+  if (globalAsync.hasValue) {
+    final allMatches = globalAsync.value!;
+    if (allMatches.isEmpty) return const AsyncValue.data([]);
+
+    final liveMatches =
+        allMatches.where((m) => m.status == MatchStatus.live).toList();
+    if (liveMatches.isNotEmpty) return AsyncValue.data(liveMatches);
+
+    final upcomingMatches =
+        allMatches.where((m) => m.status == MatchStatus.upcoming).toList();
+    if (upcomingMatches.isNotEmpty) {
+      upcomingMatches.sort((a, b) => a.date.compareTo(b.date));
+      return AsyncValue.data([upcomingMatches.first]);
+    }
+
+    final finishedMatches =
+        allMatches.where((m) => m.status == MatchStatus.finished).toList();
+    finishedMatches.sort((a, b) => b.date.compareTo(a.date));
+    return AsyncValue.data(
+      finishedMatches.isNotEmpty ? [finishedMatches.first] : [allMatches.first],
+    );
+  }
+
+  return const AsyncValue.loading();
+});
+
 final groupsProvider =
     FutureProvider.autoDispose<List<GroupModel>>((ref) async {
   final repo = ref.watch(standingsRepositoryProvider);

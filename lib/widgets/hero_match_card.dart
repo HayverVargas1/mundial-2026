@@ -7,6 +7,7 @@ import 'team_flag.dart';
 import 'countdown_widget.dart';
 import 'live_badge.dart';
 import '../screens/match_details/match_details_screen.dart';
+import 'event_icon_helper.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
@@ -63,28 +64,40 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
     final groupedAway = groupGoals(awayGoals);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.only(top: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: groupedHome.entries.map((e) => Text(
-                '${e.key} ${e.value.join(", ")}',
-                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
+              children: groupedHome.entries.map((e) => Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.sports_soccer, size: 11, color: Colors.greenAccent),
+                  const SizedBox(width: 3),
+                  Flexible(child: Text('${e.key} ${e.value.join(", ")}',
+                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  )),
+                ],
               )).toList(),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: groupedAway.entries.map((e) => Text(
-                '${e.key} ${e.value.join(", ")}',
-                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
+              children: groupedAway.entries.map((e) => Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.sports_soccer, size: 11, color: Colors.greenAccent),
+                  const SizedBox(width: 3),
+                  Flexible(child: Text('${e.key} ${e.value.join(", ")}',
+                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  )),
+                ],
               )).toList(),
             ),
           ),
@@ -99,39 +112,29 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
     return summaryAsync.when(
       data: (summary) {
         if (summary.commentaries.isEmpty) return const SizedBox();
-        // Reverse: most recent first, take top 3
-        final top3 = summary.commentaries.reversed.take(3).toList();
+        // Most recent 2 events
+        final top2 = summary.commentaries.reversed.take(2).toList();
         return Padding(
-          padding: const EdgeInsets.only(top: 24),
+          padding: const EdgeInsets.only(top: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'MINUTO A MINUTO',
-                style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1),
+              const Divider(color: AppColors.borderLight, height: 1),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(Icons.chat_bubble_outline, size: 11, color: AppColors.primary),
+                  const SizedBox(width: 5),
+                  const Text(
+                    'MINUTO A MINUTO',
+                    style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              ...top3.map((c) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (c.time.isNotEmpty)
-                      SizedBox(
-                        width: 40,
-                        child: Text(
-                          c.time,
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    Expanded(
-                      child: Text(
-                        c.text,
-                        style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
-                      ),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 8),
+              ...top2.map((c) => Padding(
+                padding: const EdgeInsets.only(bottom: 7),
+                child: buildCommentaryRow(c, compact: true),
               )).toList(),
               Align(
                 alignment: Alignment.centerRight,
@@ -145,13 +148,13 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                     ),
-                    child: const Text('Ver más', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: const Text('Ver más', style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
@@ -160,8 +163,8 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
         );
       },
       loading: () => const Padding(
-        padding: EdgeInsets.only(top: 24),
-        child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        padding: EdgeInsets.only(top: 12),
+        child: Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2))),
       ),
       error: (_, __) => const SizedBox(),
     );
@@ -173,15 +176,31 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
     final home = match.homeTeam;
     final away = match.awayTeam;
 
-    String displayGroupName = match.groupName ?? 'Fase de Grupos';
+    // Build display phase name
+    String displayGroupName = '';
     final groupsAsync = ref.watch(groupsProvider);
     if (groupsAsync.hasValue && home != null) {
       for (var group in groupsAsync.value!) {
         if (group.standings.any((s) => s.team.id == home.id)) {
-          displayGroupName = group.name.replaceAll('Group', 'Grupo').replaceAll('group', 'Grupo');
+          displayGroupName = group.name
+              .replaceAll('Group', 'Grupo')
+              .replaceAll('group', 'Grupo');
           break;
         }
       }
+    }
+    // Fallback to groupName from match
+    if (displayGroupName.isEmpty) {
+      final raw = match.groupName ?? '';
+      displayGroupName = raw
+          .replaceAll('Group', 'Grupo')
+          .replaceAll('group', 'Grupo')
+          .replaceAll('Round of 16', 'Octavos de Final')
+          .replaceAll('Quarterfinal', 'Cuartos de Final')
+          .replaceAll('Semifinal', 'Semifinal')
+          .replaceAll('Final', 'Final')
+          .replaceAll('Third Place', 'Tercer Lugar');
+      if (displayGroupName.isEmpty) displayGroupName = 'Fase de Grupos';
     }
 
     final homeIsWinner = match.status == MatchStatus.finished &&
@@ -223,35 +242,24 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
         ),
         child: Column(
           children: [
-            // Header info
+            // Header: phase · date · time
             Column(
               children: [
                 Text(
-                  'Fase de Grupos · ${AppDateUtils.formatShortDay(match.date)} ${AppDateUtils.formatDayNumber(match.date)} ${AppDateUtils.formatTime(match.date)}',
+                  '$displayGroupName · ${AppDateUtils.formatShortDay(match.date)} ${AppDateUtils.formatDayNumber(match.date)} ${AppDateUtils.formatTime(match.date)}',
                   style: const TextStyle(
                     color: AppColors.primary,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
+                    letterSpacing: 0.8,
                   ),
+                  textAlign: TextAlign.center,
                 ),
-                if (displayGroupName != 'Fase de Grupos')
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      displayGroupName,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // Teams and score/time
+            // Teams and score
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -260,12 +268,8 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
                   flex: 3,
                   child: Column(
                     children: [
-                      TeamFlag(
-                        logoUrl: home?.logoUrl,
-                        teamName: home?.displayName ?? 'TBD',
-                        size: 64,
-                      ),
-                      const SizedBox(height: 12),
+                      TeamFlag(logoUrl: home?.logoUrl, teamName: home?.displayName ?? 'TBD', size: 60),
+                      const SizedBox(height: 10),
                       Text(
                         home?.displayName ?? 'Por definir',
                         textAlign: TextAlign.center,
@@ -273,7 +277,7 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 13,
                           color: homeIsWinner ? AppColors.primary : Colors.white,
                           height: 1.1,
                         ),
@@ -282,7 +286,7 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
                   ),
                 ),
 
-                // Center Info
+                // Center
                 Expanded(
                   flex: 4,
                   child: Column(
@@ -292,22 +296,8 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
                       else if (match.status == MatchStatus.finished)
                         Column(
                           children: [
-                            const Text(
-                              'FINALIZADO',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                            Text(
-                              AppDateUtils.formatTime(match.date),
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12,
-                              ),
-                            ),
+                            const Text('FINALIZADO', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                            Text(AppDateUtils.formatTime(match.date), style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
                           ],
                         )
                       else
@@ -319,31 +309,14 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
                           isTicking: match.isTicking,
                           isHalftime: match.isHalftime,
                         ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       if (match.status != MatchStatus.upcoming)
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              '${home?.score ?? "0"}',
-                              style: TextStyle(
-                                color: homeIsWinner ? AppColors.primary : Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const Text(
-                              ' - ',
-                              style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
-                            ),
-                            Text(
-                              '${away?.score ?? "0"}',
-                              style: TextStyle(
-                                color: awayIsWinner ? AppColors.primary : Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
+                            Text('${home?.score ?? "0"}', style: TextStyle(color: homeIsWinner ? AppColors.primary : Colors.white, fontSize: 30, fontWeight: FontWeight.w900)),
+                            const Text(' - ', style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900)),
+                            Text('${away?.score ?? "0"}', style: TextStyle(color: awayIsWinner ? AppColors.primary : Colors.white, fontSize: 30, fontWeight: FontWeight.w900)),
                           ],
                         ),
                     ],
@@ -355,12 +328,8 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
                   flex: 3,
                   child: Column(
                     children: [
-                      TeamFlag(
-                        logoUrl: away?.logoUrl,
-                        teamName: away?.displayName ?? 'TBD',
-                        size: 64,
-                      ),
-                      const SizedBox(height: 12),
+                      TeamFlag(logoUrl: away?.logoUrl, teamName: away?.displayName ?? 'TBD', size: 60),
+                      const SizedBox(height: 10),
                       Text(
                         away?.displayName ?? 'Por definir',
                         textAlign: TextAlign.center,
@@ -368,7 +337,7 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 13,
                           color: awayIsWinner ? AppColors.primary : Colors.white,
                           height: 1.1,
                         ),
@@ -385,17 +354,15 @@ class _HeroMatchCardState extends ConsumerState<HeroMatchCard> {
             if (match.status == MatchStatus.live)
               _buildLiveCommentary(context),
 
-            const SizedBox(height: 24),
-            const Divider(color: AppColors.borderLight, height: 1),
             const SizedBox(height: 16),
+            const Divider(color: AppColors.borderLight, height: 1),
+            const SizedBox(height: 10),
 
             // Venue
             Text(
               '${match.venue?.fullName ?? "Estadio por definir"} · ${match.venue?.city ?? ""}',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
